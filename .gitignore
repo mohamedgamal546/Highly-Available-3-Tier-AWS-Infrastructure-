@@ -1,0 +1,25 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+
+# Terraform secrets
+*.tfvars
+!example.tfvars
+
+# Ansible
+*.retry
+
+# Environment files
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.vscode/
+.idea/

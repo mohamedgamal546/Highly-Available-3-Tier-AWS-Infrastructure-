@@ -1,0 +1,9 @@
+---
+- name: Configure and deploy AWS 3-Tier application servers
+  hosts: aws_ec2
+  become: true
+  gather_facts: true
+
+  roles:
+    - docker
+    - app

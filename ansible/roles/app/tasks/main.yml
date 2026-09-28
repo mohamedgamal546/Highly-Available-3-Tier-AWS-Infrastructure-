@@ -1,0 +1,88 @@
+---
+- name: Create application directory
+  ansible.builtin.file:
+    path: /opt/three-tier-app
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Retrieve database password and create environment file
+  ansible.builtin.shell:
+    cmd: |
+      set -e
+      umask 077
+
+      DB_PASSWORD="$(aws secretsmanager get-secret-value \
+        --secret-id three-tier/rds/credentials \
+        --region us-east-1 \
+        --query SecretString \
+        --output text)"
+
+      cat > /opt/three-tier-app/.env <<EOF_ENV
+      DB_HOST=three-tier-database.c6t6e4qwiqfg.us-east-1.rds.amazonaws.com
+      DB_PORT=3306
+      DB_USER=appadmin
+      DB_PASSWORD=${DB_PASSWORD}
+      DB_NAME=appdb
+      EOF_ENV
+
+      chmod 600 /opt/three-tier-app/.env
+  no_log: true
+  changed_when: true
+
+- name: Authenticate Docker with Amazon ECR
+  ansible.builtin.shell:
+    cmd: >
+      aws ecr get-login-password
+      --region us-east-1 |
+      docker login
+      --username AWS
+      --password-stdin
+      432500707808.dkr.ecr.us-east-1.amazonaws.com
+  no_log: true
+  changed_when: false
+
+- name: Pull application image
+  ansible.builtin.command:
+    cmd: docker pull 432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:1.1
+  register: docker_pull
+  changed_when: true
+
+- name: Stop existing application container
+  ansible.builtin.command:
+    cmd: docker stop three-tier-app
+  register: stop_container
+  failed_when: false
+  changed_when: stop_container.rc == 0
+
+- name: Remove existing application container
+  ansible.builtin.command:
+    cmd: docker rm three-tier-app
+  register: remove_container
+  failed_when: false
+  changed_when: remove_container.rc == 0
+
+- name: Start application container
+  ansible.builtin.command:
+    cmd: >
+      docker run -d
+      --name three-tier-app
+      --restart unless-stopped
+      --env-file /opt/three-tier-app/.env
+      -p 80:80
+      432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:1.1
+
+- name: Wait for application health endpoint
+  ansible.builtin.uri:
+    url: http://localhost/health
+    status_code: 200
+  register: health_check
+  retries: 10
+  delay: 3
+  until: health_check.status == 200
+
+- name: Logout Docker from Amazon ECR
+  ansible.builtin.command:
+    cmd: docker logout 432500707808.dkr.ecr.us-east-1.amazonaws.com
+  changed_when: false
