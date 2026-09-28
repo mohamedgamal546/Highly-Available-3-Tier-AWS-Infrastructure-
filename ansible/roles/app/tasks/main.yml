@@ -45,9 +45,9 @@
 
 - name: Pull application image
   ansible.builtin.command:
-    cmd: docker pull 432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:1.1
-  register: docker_pull
-  changed_when: true
+    cmd: >-
+      docker pull
+      432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:{{ image_tag }}
 
 - name: Stop existing application container
   ansible.builtin.command:
@@ -65,13 +65,13 @@
 
 - name: Start application container
   ansible.builtin.command:
-    cmd: >
+    cmd: >-
       docker run -d
       --name three-tier-app
       --restart unless-stopped
       --env-file /opt/three-tier-app/.env
       -p 80:80
-      432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:1.1
+      432500707808.dkr.ecr.us-east-1.amazonaws.com/three-tier-app:{{ image_tag }}
 
 - name: Wait for application health endpoint
   ansible.builtin.uri:
