@@ -23,3 +23,8 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+
+# Local AWS IAM configuration
+github-actions-trust-policy.json
+github-actions-permissions.json
+

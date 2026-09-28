@@ -1,0 +1,133 @@
+name: Build and Deploy 3-Tier Application
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  AWS_ACCOUNT_ID: "432500707808"
+  ECR_REPOSITORY: three-tier-app
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  test:
+    name: Test Application
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r application/requirements.txt
+
+      - name: Run application smoke test
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "application")
+
+          from app import app
+
+          client = app.test_client()
+          response = client.get("/health")
+
+          assert response.status_code == 200
+          assert response.json["status"] == "healthy"
+
+          print("Application health test passed")
+          PY
+
+  build-and-deploy:
+    name: Build, Push and Deploy
+    needs: test
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::432500707808:role/GitHubActions-ThreeTier
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG \
+            -f docker/app/Dockerfile .
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push \
+            $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible-core==2.20.1 boto3 botocore
+
+      - name: Install Amazon AWS Ansible collection
+        run: |
+          ansible-galaxy collection install amazon.aws:10.1.2
+
+      - name: Install Session Manager Plugin
+        run: |
+          curl -fsSL \
+            https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb \
+            -o /tmp/session-manager-plugin.deb
+
+          sudo dpkg -i /tmp/session-manager-plugin.deb
+
+      - name: Verify Ansible environment
+        working-directory: ansible
+        run: |
+          ansible --version
+          ansible-galaxy collection list amazon.aws
+          session-manager-plugin --version
+
+      - name: Verify EC2 instances through Ansible
+        working-directory: ansible
+        run: |
+          ansible aws_ec2 -m ansible.builtin.ping
+
+      - name: Deploy application to EC2 instances
+        working-directory: ansible
+        run: |
+          ansible-playbook playbooks/site.yml \
+            -e "image_tag=$IMAGE_TAG"
+
+      - name: Verify application health
+        working-directory: ansible
+        run: |
+          ansible aws_ec2 \
+            -b \
+            -m ansible.builtin.uri \
+            -a "url=http://localhost/health status_code=200"
