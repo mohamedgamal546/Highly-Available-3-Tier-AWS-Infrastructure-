@@ -119,7 +119,7 @@ The application is packaged as a Docker image and designed to run as a container
 
 ### CI/CD
 
-GitHub Actions provides automation for the application and infrastructure workflow, including Terraform validation and application image build/publish workflows.
+GitHub Actions automates application testing, Docker image build and publishing to Amazon ECR, Ansible connectivity, application deployment, and post-deployment health verification.
 
 ---
 
@@ -164,11 +164,23 @@ GitHub Actions provides automation for the application and infrastructure workfl
 │       └── ...
 │
 ├── docs/
-│   ├── architecture/
-│   ├── screenshots/
-│   ├── testing/
-│   └── ...
-│
+│   └── screenshots/
+│       ├── alb-target-health.png
+│       ├── ansible-validation.png
+│       ├── application-health-check.png
+│       ├── aws-alb.png
+│       ├── ec2-server-a-private-instances.png
+│       ├── ec2-server-b-private-instances.png
+│       ├── ecr.png
+│       ├── github-actions.png
+│       ├── nat-gateway.png
+│       ├── rds-multi-az-1.png
+│       ├── rds-multi-az-2.png
+│       ├── s3-validation.png
+│       ├── security-groups-alb.png
+│       ├── security-groups-app.png
+│       ├── security-groups-rds.png
+│       └── vpc-resource-map.png
 ├── terraform/
 │   ├── alb.tf
 │   ├── ec2.tf
@@ -344,48 +356,105 @@ After testing, project resources were removed from AWS to avoid unnecessary ongo
 The default AWS VPC was intentionally left untouched.
 
 ---
+## AWS Deployment Evidence
 
-## AWS Evidence
+The repository includes deployment and validation evidence captured from the AWS Management Console, application validation, automation workflows, and infrastructure configuration.
 
-The repository contains screenshots documenting the implementation and validation of the infrastructure.
+### VPC & Resource Map
 
-### Architecture
+![VPC Resource Map](docs/screenshots/vpc-resource-map.png)
 
-![AWS Architecture](docs/screenshots/aws-architecture.png)
+The VPC resource map shows the deployed network topology, including public and private subnets, route tables, Internet Gateway, NAT Gateway, and resources distributed across Availability Zones.
 
-### VPC & Networking
+### NAT Gateway
 
-![VPC](docs/screenshots/aws-vpc.png)
+![NAT Gateway](docs/screenshots/nat-gateway.png)
+
+The NAT Gateway provides outbound Internet connectivity for resources deployed in private subnets.
+
+### Security Groups
+
+#### Application Load Balancer
+
+![ALB Security Group](docs/screenshots/security-groups-alb.png)
+
+#### Application Tier
+
+![Application Security Group](docs/screenshots/security-groups-app.png)
+
+#### Database Tier
+
+![RDS Security Group](docs/screenshots/security-groups-rds.png)
+
+The security groups enforce controlled communication between the Internet-facing load balancer, private application servers, and private database tier.
+
+### Private EC2 Application Servers
+
+#### Application Server A
+
+![Private EC2 Server A](docs/screenshots/ec2-server-a-private-instances.png)
+
+#### Application Server B
+
+![Private EC2 Server B](docs/screenshots/ec2-server-b-private-instances.png)
+
+The application servers are deployed in private subnets without public IP addresses.
 
 ### Application Load Balancer
 
-![ALB](docs/screenshots/aws-alb.png)
+![Application Load Balancer](docs/screenshots/aws-alb.png)
 
-### Target Health
+The Application Load Balancer provides the public entry point and distributes traffic to the private application instances.
 
-![Target Health](docs/screenshots/alb-target-health.png)
+### ALB Target Health
 
-### EC2 Private Instances
+![ALB Target Health](docs/screenshots/alb-target-health.png)
 
-![EC2](docs/screenshots/ec2-private-instances.png)
+The target group health check confirms that the application targets are healthy and available behind the load balancer.
 
-### Systems Manager
+### Amazon RDS Multi-AZ
 
-![SSM](docs/screenshots/ssm-session.png)
+#### RDS Configuration
 
-### RDS Multi-AZ
+![RDS Multi-AZ Configuration](docs/screenshots/rds-multi-az-1.png)
 
-![RDS](docs/screenshots/rds-multi-az.png)
+#### RDS Availability
 
-### ECR
+![RDS Multi-AZ](docs/screenshots/rds-multi-az-2.png)
 
-![ECR](docs/screenshots/ecr.png)
+The database tier uses Amazon RDS for MySQL with Multi-AZ deployment and private network placement.
 
-### CI/CD
+### Amazon ECR
+
+![Amazon ECR](docs/screenshots/ecr.png)
+
+Amazon ECR is used as the container image registry for the application workload.
+
+### GitHub Actions
 
 ![GitHub Actions](docs/screenshots/github-actions.png)
 
----
+GitHub Actions automates the CI/CD workflow for the project.
+
+### Ansible Validation
+
+![Ansible Validation](docs/screenshots/ansible-validation.png)
+
+The Ansible validation evidence demonstrates configuration and deployment automation on the application hosts.
+
+### Application Health Check
+
+![Application Health Check](docs/screenshots/application-health-check.png)
+
+The application health check confirms that the deployed application is responding successfully.
+
+### S3 Validation
+
+![S3 Validation](docs/screenshots/s3-validation.png)
+
+S3 validation evidence documents the project's AWS storage/service validation activity.
+
+
 
 ## Project Validation Evidence
 
