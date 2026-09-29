@@ -7,6 +7,7 @@
 [![Ansible](https://img.shields.io/badge/Ansible-Automation-EE0000?logo=ansible\&logoColor=white)](https://www.ansible.com/)
 [![Docker](https://img.shields.io/badge/Docker-Containerization-2496ED?logo=docker\&logoColor=white)](https://www.docker.com/)
 [![GitHub Actions](https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=github-actions\&logoColor=white)](https://github.com/features/actions)
+[![CI/CD](https://github.com/mohamedgamal546/Highly-Available-3-Tier-AWS-Infrastructure-/actions/workflows/deploy.yml/badge.svg)](https://github.com/mohamedgamal546/Highly-Available-3-Tier-AWS-Infrastructure-/actions/workflows/deploy.yml)
 
 ## Overview
 
@@ -291,31 +292,37 @@ Security controls include:
 
 ## CI/CD Workflow
 
-The project integrates GitHub Actions into the infrastructure and application workflow.
+The project integrates GitHub Actions into the application delivery workflow.
 
 ```text
 Developer
     │
     ▼
-Git Push
+Git Push to main
     │
     ▼
 GitHub Actions
     │
-    ├── Terraform Format
-    ├── Terraform Init
-    ├── Terraform Validate
+    ├── Application Smoke Test
     │
-    └── Application Build
-             │
-             ▼
-        Docker Image
-             │
-             ▼
-        Amazon ECR
+    ├── AWS Authentication
+    │      └── OIDC → IAM Role
+    │
+    ├── Docker Build
+    │
+    ├── Push Image → Amazon ECR
+    │
+    ├── Ansible Environment Setup
+    │      └── AWS Collection + SSM Plugin
+    │
+    ├── Ansible EC2 Connectivity
+    │
+    ├── Deploy via AWS SSM
+    │
+    └── Post-Deployment Health Check
 ```
 
-The workflow keeps infrastructure and application automation version-controlled alongside the source code.
+The workflow automatically tests the application, builds and publishes the Docker image to Amazon ECR, verifies EC2 connectivity through Ansible and AWS Systems Manager, deploys the application, and performs a post-deployment health check.
 
 ---
 
