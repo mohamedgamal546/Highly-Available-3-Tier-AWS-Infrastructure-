@@ -1,5 +1,7 @@
 # Highly Available 3-Tier AWS Infrastructure
 
+![Highly Available 3-Tier AWS Infrastructure](docs/architecture.png)
+
 > **Production-style, highly available 3-tier AWS infrastructure built with Terraform, Ansible, Docker, Amazon ECR, and GitHub Actions.**
 
 [![Terraform](https://img.shields.io/badge/Terraform-1.16+-623CE4?logo=terraform\&logoColor=white)](https://www.terraform.io/)
